@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#050504">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="ÓXIDO — un juego de terror en un desguace laberíntico. Encuentra las piezas de valor y escapa del VIGÍA-7.">
+  <title>ÓXIDO — Desguace 13</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23050504'/%3E%3Ccircle cx='32' cy='32' r='18' fill='none' stroke='%23a64b2a' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23ff4c30'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene" aria-label="Vista en primera persona del desguace"></canvas>
+
+    <div id="fx" aria-hidden="true">
+      <div class="fx-grain"></div>
+      <div class="fx-vignette"></div>
+      <div class="fx-scan"></div>
+    </div>
+
+    <main id="hud" class="hidden" aria-live="polite">
+      <div class="topbar">
+        <section class="objective-card">
+          <div class="eyebrow"><span class="pulse-dot"></span> OBJETIVO</div>
+          <div id="objectiveText" class="objective-text">ENCUENTRA 5 PIEZAS</div>
+          <div id="itemSlots" class="item-slots" aria-label="Piezas encontradas"></div>
+        </section>
+
+        <div class="top-right">
+          <button id="pauseBtn" class="icon-btn" type="button" aria-label="Pausa">Ⅱ</button>
+          <section class="sensor-card" aria-label="Detector de metales">
+            <div class="sensor-head"><span>SEÑAL</span><span id="sensorState">—</span></div>
+            <div id="sensorBars" class="sensor-bars">
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div id="reticle" class="reticle" aria-hidden="true"></div>
+      <div id="threat" class="threat" aria-hidden="true">TE HA VISTO</div>
+
+      <div id="prompt" class="prompt hidden">
+        <span class="keycap">E</span>
+        <span id="promptText">RECOGER</span>
+      </div>
+
+      <div id="joystick" class="joystick touch-only" aria-label="Joystick de movimiento">
+        <div class="joystick-ring"></div>
+        <div id="joystickThumb" class="joystick-thumb"><span></span></div>
+        <div class="joystick-label">MOVER</div>
+      </div>
+
+      <div class="action-cluster">
+        <div id="staminaWrap" class="stamina-wrap">
+          <span>ALIENTO</span>
+          <div class="stamina-track"><div id="staminaBar"></div></div>
+        </div>
+        <button id="sprintBtn" class="action-btn sprint-btn touch-only" type="button" aria-label="Correr">CORRER</button>
+        <button id="useBtn" class="action-btn use-btn hidden" type="button" aria-label="Interactuar">RECOGER</button>
+      </div>
+
+      <div id="desktopHint" class="desktop-hint">WASD · RATÓN · SHIFT · E</div>
+      <div id="introCaption" class="intro-caption">
+        <span>DESGUACE MUNICIPAL</span>
+        <strong>SECTOR 7 · 03:12</strong>
+      </div>
+    </main>
+
+    <div id="toast" class="toast" role="status"></div>
+
+    <section id="startScreen" class="screen start-screen">
+      <div class="start-glow" aria-hidden="true"></div>
+      <div class="start-content">
+        <div class="start-topline"><span>ARCHIVO 013</span><span>NOCHE / TURNO 3</span></div>
+        <div class="logo-wrap">
+          <div class="logo-kicker">DESGUACE MUNICIPAL · SECTOR 7</div>
+          <h1 class="logo" data-text="ÓXIDO">ÓXIDO</h1>
+          <div class="logo-rule"><i></i><span>NO ESTÁS SOLO ENTRE LA CHATARRA</span><i></i></div>
+        </div>
+        <p class="tagline">Cinco piezas de valor.<br>Un laberinto de metal.<br><em>Algo sigue encendido ahí dentro.</em></p>
+
+        <div class="menu-actions">
+          <button id="startBtn" class="start-btn" type="button" aria-label="Start">
+            <span>START</span>
+            <small>ENTRAR AL DESGUACE</small>
+          </button>
+          <div class="menu-toggles">
+            <button id="tiltBtn" class="toggle-btn" type="button">INCLINACIÓN <b>OFF</b></button>
+            <button id="muteBtn" class="toggle-btn" type="button">SONIDO <b>ON</b></button>
+          </div>
+        </div>
+
+        <p id="menuStatus" class="inline-status" role="status"></p>
+
+        <div class="menu-controls">
+          <div><span class="mini-icon">✥</span><b>MÓVIL</b> Joystick para moverte. Arrastra la vista. Mantén CORRER.</div>
+          <div><span class="mini-icon">⌨</span><b>TECLADO</b> WASD, ratón para mirar, SHIFT para correr, E para recoger.</div>
+        </div>
+        <div class="start-foot">
+          <span>AURICULARES RECOMENDADOS</span>
+          <span>v1.0 · VIGÍA-7</span>
+        </div>
+      </div>
+      <div class="start-eye" aria-hidden="true"><i></i></div>
+    </section>
+
+    <section id="pauseScreen" class="screen overlay-screen hidden">
+      <div class="panel pause-panel">
+        <div class="eyebrow">SISTEMA EN PAUSA</div>
+        <h2>PAUSA</h2>
+        <p class="panel-copy">El VIGÍA-7 también espera. No tardes.</p>
+        <div class="panel-actions">
+          <button id="resumeBtn" class="primary-btn" type="button">CONTINUAR</button>
+          <button id="restartBtn" class="secondary-btn" type="button">REINICIAR</button>
+        </div>
+        <div class="pause-options">
+          <button id="pauseTiltBtn" class="toggle-btn" type="button">INCLINACIÓN <b>OFF</b></button>
+          <button id="pauseMuteBtn" class="toggle-btn" type="button">SONIDO <b>ON</b></button>
+          <button id="fullscreenBtn" class="toggle-btn" type="button">PANTALLA COMPLETA</button>
+          <p id="pauseStatus" class="inline-status" role="status"></p>
+        </div>
+        <div class="pause-note">Consejo: el detector pita más rápido cuando estás cerca de una pieza. Correr hace ruido.</div>
+      </div>
+    </section>
+
+    <section id="gameoverScreen" class="screen overlay-screen hidden">
+      <div class="panel death-panel">
+        <div class="death-mark">×</div>
+        <div class="eyebrow">SEÑAL PERDIDA</div>
+        <h2>TE ENCONTRÓ</h2>
+        <p class="panel-copy">El VIGÍA-7 no se detiene. Ni siquiera cuando ya no queda nada que proteger.</p>
+        <div id="deathStats" class="stats"></div>
+        <div class="panel-actions">
+          <button id="retryBtn" class="primary-btn" type="button">REINTENTAR</button>
+          <button id="menuBtn" class="secondary-btn" type="button">MENÚ</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="winScreen" class="screen overlay-screen win-screen hidden">
+      <div class="panel win-panel">
+        <div class="eyebrow">REGISTRO DE SALIDA · 03:XX</div>
+        <h2>HAS ESCAPADO</h2>
+        <p class="panel-copy">La puerta se cierra a tu espalda. Algo golpea el metal desde dentro. Esta vez no te siguió.</p>
+        <div id="winStats" class="stats"></div>
+        <div class="panel-actions">
+          <button id="againBtn" class="primary-btn" type="button">OTRA NOCHE</button>
+          <button id="winMenuBtn" class="secondary-btn" type="button">MENÚ</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="jumpscare" class="jumpscare hidden" aria-hidden="true">
+      <canvas id="scareCanvas"></canvas>
+    </div>
+
+    <div id="rotateHint" class="rotate-hint">
+      <span>GIRA EL DISPOSITIVO</span>
+      <small>Mejor en horizontal. O sigue así, si te atreves.</small>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
